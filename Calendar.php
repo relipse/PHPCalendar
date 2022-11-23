@@ -123,17 +123,19 @@ class Calendar {
         $this->events[] = ['short_title'=>$txt, 'date'=>$date, 'days_span'=>$days, 'color'=>$color, 'link'=>'', 'hover_title'=>''];
     }
 
-    public function iterateEvents($i, $year = null, $month = null){
+    public function iterateEvents($i, $year = null, $month = null, &$num_events = null){
         if (is_null($year)){
             $year = $this->active_year;
         }
         if (is_null($month)){
             $month = $this->active_month;
         }
+        $num_events = 0;
         $html = '';
         foreach ($this->events as $event) {
             for ($d = 0; $d <= ($event['days_span']-1); $d++) {
                 if (date('y-m-d', strtotime($year . '-' . $month . '-' . $i . ' -' . $d . ' day')) == date('y-m-d', strtotime($event['date']))) {
+                    $num_events++;
                     $html .= '<div class="event' . $event['color'].'"';
                     if (!empty($event['hover_title'])){
                         $html .= ' title="'.htmlentities($event['hover_title']).'"';
@@ -156,6 +158,9 @@ class Calendar {
                     $html .= '</div>';
                 }
             }
+        }
+        if ($return_num_events_instead){
+            return $num_events;
         }
         return $html;
     }
@@ -184,8 +189,10 @@ class Calendar {
         $dtlastmonth->modify('-1 month');
         //if (!$this->hide_previous_month) {
             for ($i = $first_day_of_week; $i > 0; $i--) {
+                $iterated_events_html = $this->iterateEvents($num_days_last_month - $i + 1, $dtlastmonth->format('Y'), $dtlastmonth->format('m'), $num_events);
                 $html .= '
-                <div class="day_num ignore'.($this->hide_previous_month ? ' hidemonth':'').($i === 1?' last':'').'">
+                <div class="day_num ignore'.($this->hide_previous_month ? ' hidemonth':'').($i === 1?' last':'').
+                    '" title="'.$num_events.' event'.($num_events !== 1?'s':'').'">
                     ';
 
                 if (!$this->hide_previous_month) {
@@ -193,7 +200,7 @@ class Calendar {
                         $html .= '<span class="nonactivemonth">' . $dtlastmonth->format('M') . '</span>';
                     }
                     $html .= '<span>' . ($num_days_last_month - $i + 1) . '</span>';
-                    $html .= $this->iterateEvents($num_days_last_month - $i + 1, $dtlastmonth->format('Y'), $dtlastmonth->format('m'));
+                    $html .= $iterated_events_html;
                 }
                 $html .= '
                 </div>
@@ -201,16 +208,18 @@ class Calendar {
             }
         //}
         for ($i = 1; $i <= $num_days; $i++) {
+            $iterated_events_html = $this->iterateEvents($i, null, null, $num_events);
+
             $selected = '';
             if ($i == $this->active_day) {
                 $selected = ' selected';
             }
-            $html .= '<div class="day_num' . $selected . '">';
+            $html .= '<div class="day_num' . $selected . '" title="'.$num_events.' event'.($num_events !== 1?'s':'').'">';
             if ($this->show_active_month_name_on_first && $i === 1){
                 $html .= '<span class="activemonthname">'.$dt->format('M').'</span>';
             }
             $html .= '<span>' . $i . '</span>';
-            $html .= $this->iterateEvents($i);
+            $html .= $iterated_events_html;
             $html .= '</div>';
         }
 
@@ -219,8 +228,9 @@ class Calendar {
         $numdaysvisible = 7*$this->num_weeks_visible;
         if (!$this->hide_next_month) {
             for ($i = 1; $i <= ($numdaysvisible - $num_days - max($first_day_of_week, 0)); $i++) {
+                $iterated_events_html = $this->iterateEvents($i, $dt->format('Y'), $dt->format('m'), $num_events);
                 $html .= '
-                <div class="day_num ignore">
+                <div class="day_num ignore" title="'.$num_events.' event'.($num_events !== 1?'s':'').'">
                     ';
                 if ($this->show_nonactive_month_name && $i === 1) {
                     $html .= '<span class="nonactivemonth">' . $dt->format('M') . '</span>';
@@ -228,7 +238,7 @@ class Calendar {
 
                 $html .= '<span>';
                 $html .= $i . '</span>';
-                $html .= $this->iterateEvents($i, $dt->format('Y'), $dt->format('m'));
+                $html .= $iterated_events_html;
 
                 $html .= '
                 </div>
