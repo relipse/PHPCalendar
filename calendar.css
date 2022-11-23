@@ -1,5 +1,5 @@
-/** 
- * Much of this was from code on CodeShack (https://codeshack.io/event-calendar-php/ accessed: 2022-11-18) 
+/**
+ * Much of this was from code on CodeShack (https://codeshack.io/event-calendar-php/ accessed: 2022-11-18)
  * Heavily modified by Jim Kinsman
  */
 .calendar {
@@ -48,11 +48,13 @@
     /*margin-top: 10px;*/
     font-weight: 500;
     font-size: 10px;
-    padding: 0 1px;
+    padding: 0 2px;
     border-radius: 3px;
     background-color: #f7c30d;
     color: #fff;
     word-wrap: break-word;
+    margin-bottom: 1px;
+    line-height: 15px;
 }
 
 .calendar .days .day_num .event a,
