@@ -159,9 +159,6 @@ class Calendar {
                 }
             }
         }
-        if ($return_num_events_instead){
-            return $num_events;
-        }
         return $html;
     }
 
