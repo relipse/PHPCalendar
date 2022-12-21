@@ -110,17 +110,35 @@ class Calendar {
         if (!isset($ary['color'])){
             $ary['color'] = '';
         }
-        $this->add_event_details($ary['short_title'], $ary['link'], $ary['hover_title'], $ary['date'], $ary['days_span'], $ary['color']);
+        if (!isset($ary['time_included'])){
+            $ary['time_included'] = true;
+        }
+        $this->add_event_details($ary['short_title'], $ary['link'], $ary['hover_title'], $ary['date'], $ary['days_span'], $ary['color'], $ary['time_included']);
     }
 
-    public function add_event_details($short_title, $link, $hover_title, $datetime, $days_span = 1, $color = ''){
+    public function add_event_details($short_title, $link, $hover_title, $datetime, $days_span = 1, $color = '', $timeincluded = true){
         $color = $color ? ' ' . $color : $color;
-        $this->events[] = ['short_title'=>$short_title, 'hover_title'=> $hover_title, 'link'=>$link, 'date'=>$datetime, 'days_span'=>$days_span, 'color'=>$color];
+        $this->events[] = [
+            'short_title'=>$short_title,
+            'hover_title'=> $hover_title,
+            'link'=>$link, 'date'=>$datetime,
+            'days_span'=>$days_span,
+            'color'=>$color,
+            'time_included'=>$timeincluded,
+        ];
     }
 
-    public function add_event($txt, $date, $days = 1, $color = '') {
+    public function add_event($txt, $date, $days = 1, $color = '', $timeincluded = true) {
         $color = $color ? ' ' . $color : $color;
-        $this->events[] = ['short_title'=>$txt, 'date'=>$date, 'days_span'=>$days, 'color'=>$color, 'link'=>'', 'hover_title'=>''];
+        $this->events[] = [
+            'short_title'=>$txt,
+            'date'=>$date,
+            'days_span'=>$days,
+            'color'=>$color,
+            'link'=>'',
+            'hover_title'=>'',
+            'time_included'=>$timeincluded
+        ];
     }
 
     public function iterateEvents($i, $year = null, $month = null, &$num_events = null){
@@ -144,12 +162,25 @@ class Calendar {
                     if (!empty($event['link'])){
                         $html .= '<a href="'.htmlentities($event['link']).'">';
                     }
-                    if ($this->show_time_in_short_title && strpos($event['date'], ':') !== false){
-                        $dtevt = new \DateTime($event['date'], new \DateTimeZone($this->timezone));
-                        $short = $dtevt->format('gia');
-                        $short = str_replace('00','',$short);
-                        $short = str_replace('m','',$short);
-                        $html .= $short.' ';
+                    if ($this->show_time_in_short_title){
+                        //we are going to see if the 'date' field actually contains a time
+                        $dparsed = date_parse($event['date']);
+                        if ($dparsed['hour'] === false){
+                            $timeincluded = false;
+                        }else{
+                            //if it does, mark time included
+                            $timeincluded = true;
+                        }
+
+                        //but both the event['time_included'] and the timeincluded variables must be true to
+                        //show the time
+                        if ($timeincluded && !empty($event['time_included'])) {
+                            $dtevt = new \DateTime($event['date'], new \DateTimeZone($this->timezone));
+                            $short = $dtevt->format('gia');
+                            $short = str_replace('00', '', $short);
+                            $short = str_replace('m', '', $short);
+                            $html .= $short . ' ';
+                        }
                     }
                     $html .= $event['short_title'];
                     if (!empty($event['link'])){
@@ -185,24 +216,24 @@ class Calendar {
         $dtlastmonth = clone $dt;
         $dtlastmonth->modify('-1 month');
         //if (!$this->hide_previous_month) {
-            for ($i = $first_day_of_week; $i > 0; $i--) {
-                $iterated_events_html = $this->iterateEvents($num_days_last_month - $i + 1, $dtlastmonth->format('Y'), $dtlastmonth->format('m'), $num_events);
-                $html .= '
+        for ($i = $first_day_of_week; $i > 0; $i--) {
+            $iterated_events_html = $this->iterateEvents($num_days_last_month - $i + 1, $dtlastmonth->format('Y'), $dtlastmonth->format('m'), $num_events);
+            $html .= '
                 <div class="day_num ignore'.($this->hide_previous_month ? ' hidemonth':'').($i === 1?' last':'').
-                    '" title="'.$num_events.' event'.($num_events !== 1?'s':'').'">
+                '" title="'.$num_events.' event'.($num_events !== 1?'s':'').'">
                     ';
 
-                if (!$this->hide_previous_month) {
-                    if ($this->show_nonactive_month_name && $i === $first_day_of_week) {
-                        $html .= '<span class="nonactivemonth">' . $dtlastmonth->format('M') . '</span>';
-                    }
-                    $html .= '<span>' . ($num_days_last_month - $i + 1) . '</span>';
-                    $html .= $iterated_events_html;
+            if (!$this->hide_previous_month) {
+                if ($this->show_nonactive_month_name && $i === $first_day_of_week) {
+                    $html .= '<span class="nonactivemonth">' . $dtlastmonth->format('M') . '</span>';
                 }
-                $html .= '
+                $html .= '<span>' . ($num_days_last_month - $i + 1) . '</span>';
+                $html .= $iterated_events_html;
+            }
+            $html .= '
                 </div>
             ';
-            }
+        }
         //}
         for ($i = 1; $i <= $num_days; $i++) {
             $iterated_events_html = $this->iterateEvents($i, null, null, $num_events);
